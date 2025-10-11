@@ -4,7 +4,8 @@ int main()
 {
     VulkanEngine engine;
 
-    engine.run();
+    engine.init();
+	engine.run();
 
     return 0;
 }
