@@ -10,7 +10,7 @@ set_property(TARGET engine PROPERTY CXX_STANDARD 20)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(Vulkan REQUIRED)
-target_link_libraries(engine PUBLIC Vulkan::Vulkan SDL3::SDL3)
+target_link_libraries(engine PUBLIC Vulkan::Vulkan glfw)
 
 target_precompile_headers(engine PUBLIC 
     <optional> 

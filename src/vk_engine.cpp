@@ -1,6 +1,5 @@
 #include "vk_engine.h"
-
-#include <SDL3/SDL.h>
+#include <stdexcept>
 
 #ifdef _DEBUG
 static constexpr bool enableValidationLayers = true;
@@ -14,17 +13,21 @@ static const std::vector<const char*> validationLayers = {
 
 void VulkanEngine::init()
 {
-	SDL_Init(SDL_INIT_VIDEO);
-	SDL_WindowFlags windowFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN);
-
-	_window = SDL_CreateWindow("Vulkan Engine", _windowExtent.width, _windowExtent.height, windowFlags);
-
+	initWindow();
 	initVulkan();
 	initSwapChain();
 	initCommands();
 	initSyncStructures();
 
 	_isInitialized = true;
+}
+
+void VulkanEngine::initWindow()
+{
+	// Initialize GLFW window
+	glfwInit();
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	_window = glfwCreateWindow(_windowExtent.width, _windowExtent.height, "Vulkan Engine", nullptr, nullptr);
 }
 
 void VulkanEngine::initVulkan()
@@ -37,7 +40,11 @@ void VulkanEngine::initVulkan()
 	applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	applicationInfo.pEngineName = "No Engine";
 	applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	applicationInfo.apiVersion = VK_API_VERSION_1_4;
+	applicationInfo.apiVersion = VK_API_VERSION_1_3;
+
+	uint32_t glfwExtensionCount = 0;
+	const char** glfwExtensions;
+	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	VkInstanceCreateInfo instanceInfo{};
 	instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -46,11 +53,16 @@ void VulkanEngine::initVulkan()
 	instanceInfo.pApplicationInfo = &applicationInfo;
 	instanceInfo.enabledLayerCount = validationLayers.size();
 	instanceInfo.ppEnabledLayerNames = validationLayers.data();
-	instanceInfo.enabledExtensionCount = ;
-	const char* const* ppEnabledExtensionNames;
-	//vkCreateInstance(&createInfo, nullptr, &_instance);
+	instanceInfo.enabledExtensionCount = glfwExtensionCount;
+	instanceInfo.ppEnabledExtensionNames = glfwExtensions;
 
-	// Setup debug messenger
+	if (vkCreateInstance(&instanceInfo, nullptr, &_instance) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create Vulkan instance.");
+	}
+
+	// 2. Setup debug messenger
+	
 	// Select physical device
 	// Create logical device and retrieve queues
 	// Create surface for rendering
