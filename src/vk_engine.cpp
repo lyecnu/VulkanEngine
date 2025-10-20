@@ -1,5 +1,10 @@
 #include "vk_engine.h"
-#include <stdexcept>
+
+#include <thread>
+#include <chrono>
+
+#include "SDL3/SDL.h"
+#include "VkBootstrap.h"
 
 #ifdef _DEBUG
 static constexpr bool enableValidationLayers = true;
@@ -11,64 +16,87 @@ static const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
-void VulkanEngine::init()
+VulkanEngine& VulkanEngine::Instance()
 {
-	initWindow();
-	initVulkan();
-	initSwapChain();
-	initCommands();
-	initSyncStructures();
+	static VulkanEngine instance;
+	return instance;
+}
+
+void VulkanEngine::Init()
+{
+	if (_isInitialized) return;
+
+	SDL_Init(SDL_INIT_VIDEO);
+	SDL_WindowFlags windowFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN);
+	_window = SDL_CreateWindow(
+		"Vulkan Engine",
+		_windowExtent.width,
+		_windowExtent.height,
+		windowFlags
+	);
 
 	_isInitialized = true;
+
+	InitVulkan();
+	InitSwapChain();
+	InitCommands();
+	InitSyncStructures();
 }
 
-void VulkanEngine::initWindow()
+void VulkanEngine::Cleanup()
 {
-	// Initialize GLFW window
-	glfwInit();
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	_window = glfwCreateWindow(_windowExtent.width, _windowExtent.height, "Vulkan Engine", nullptr, nullptr);
+	if (!_isInitialized) return;
 }
 
-void VulkanEngine::initVulkan()
+void VulkanEngine::Draw()
 {
-	// 1. Create Vulkan instance
-	VkApplicationInfo applicationInfo{};
-	applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	applicationInfo.pNext = nullptr;
-	applicationInfo.pApplicationName = "Vulkan Engine";
-	applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	applicationInfo.pEngineName = "No Engine";
-	applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	applicationInfo.apiVersion = VK_API_VERSION_1_3;
+}
 
-	uint32_t glfwExtensionCount = 0;
-	const char** glfwExtensions;
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-	VkInstanceCreateInfo instanceInfo{};
-	instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceInfo.pNext = nullptr;
-	instanceInfo.flags = 0;
-	instanceInfo.pApplicationInfo = &applicationInfo;
-	instanceInfo.enabledLayerCount = validationLayers.size();
-	instanceInfo.ppEnabledLayerNames = validationLayers.data();
-	instanceInfo.enabledExtensionCount = glfwExtensionCount;
-	instanceInfo.ppEnabledExtensionNames = glfwExtensions;
+void VulkanEngine::Run()
+{
+	SDL_Event e;
+	bool bQuit = false;
 
-	if (vkCreateInstance(&instanceInfo, nullptr, &_instance) != VK_SUCCESS)
+	while (!bQuit)
 	{
-		throw std::runtime_error("Failed to create Vulkan instance.");
-	}
+		while (SDL_PollEvent(&e))
+		{
+			if (e.type == SDL_EVENT_QUIT)
+			{
+				bQuit = true;
+			}
+			if (e.type == SDL_EVENT_WINDOW_MINIMIZED)
+			{
+				_isStopRendering = true;
+			}
+			if (e.type == SDL_EVENT_WINDOW_RESTORED)
+			{
+				_isStopRendering = false;
+			}
+		}
 
-	// 2. Setup debug messenger
-	
-	// Select physical device
-	// Create logical device and retrieve queues
-	// Create surface for rendering
+		if (_isStopRendering)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			continue;
+		}
+		Draw();
+	}
 }
 
-void VulkanEngine::initSwapChain()
+void VulkanEngine::InitVulkan()
+{
+	vkb::InstanceBuilder builder;
+	auto instanceResult = builder.set_app_name("Vulkan Engine")
+		.request_validation_layers(enableValidationLayers)
+		.require_api_version(VK_VERSION_1_3)
+		.build();
+
+	vkb::Instance vkbInstance = instanceResult.value();
+}
+
+void VulkanEngine::InitSwapChain()
 {
 	// Create swap chain
 	// Create image views for swap chain images
@@ -76,21 +104,13 @@ void VulkanEngine::initSwapChain()
 	// Create framebuffers for each swap chain image view
 }
 
-void VulkanEngine::initCommands()
+void VulkanEngine::InitCommands()
 {
 	// Create command pool
 	// Allocate command buffers
 }
 
-void VulkanEngine::initSyncStructures()
+void VulkanEngine::InitSyncStructures()
 {
 	// Create semaphores and fences for synchronization
-}
-
-void VulkanEngine::run()
-{
-	while (true)
-	{
-		// Main loop
-	}
 }

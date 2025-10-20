@@ -1,12 +1,13 @@
 #pragma once
 
 #include "vk_common.h"
-#include <GLFW/glfw3.h>
 
 class VulkanEngine
 {
 public:
 	bool _isInitialized{ false };
+	int _frameNumber{ 0 };
+	bool _isStopRendering{ false };
 	VkExtent2D _windowExtent{ 800, 600 };
 
     VkInstance _instance{ VK_NULL_HANDLE };
@@ -16,16 +17,26 @@ public:
 	VkSurfaceKHR _surface{ VK_NULL_HANDLE };
 
 public:
-	void init();
-	void run();
+	static VulkanEngine& Instance();
+
+	void Init();
+	void Draw();
+	void Cleanup();
+	void Run();
 
 private:
-	GLFWwindow* _window{ nullptr };
+	struct SDL_Window* _window{ nullptr };
 
 private:
-	void initWindow();
-	void initVulkan();
-	void initSwapChain();
-	void initCommands();
-	void initSyncStructures();
+	VulkanEngine() = default;
+	~VulkanEngine() = default;
+	VulkanEngine(const VulkanEngine&) = delete;
+	VulkanEngine& operator=(const VulkanEngine&) = delete;
+	VulkanEngine(VulkanEngine&&) = delete;
+	VulkanEngine& operator=(VulkanEngine&&) = delete;
+
+	void InitVulkan();
+	void InitSwapChain();
+	void InitCommands();
+	void InitSyncStructures();
 };
