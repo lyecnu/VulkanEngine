@@ -16,6 +16,12 @@ public:
 	VkDevice _device{ VK_NULL_HANDLE };
 	VkSurfaceKHR _surface{ VK_NULL_HANDLE };
 
+	VkSwapchainKHR _swapChain{ VK_NULL_HANDLE };
+	VkFormat _swapChainImageFormat;
+	std::vector<VkImage> _swapChainImages;
+	std::vector<VkImageView> _swapChainImageViews;
+	VkExtent2D _swapChainExtent;
+
 public:
 	static VulkanEngine& Instance();
 
@@ -39,4 +45,7 @@ private:
 	void InitSwapChain();
 	void InitCommands();
 	void InitSyncStructures();
+
+	void CreateSwapChain(uint32_t width, uint32_t height);
+	void DestroySwapChain();
 };

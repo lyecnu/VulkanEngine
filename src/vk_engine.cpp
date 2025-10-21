@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "SDL3/SDL.h"
+#include "SDL3/SDL_vulkan.h"
 #include "VkBootstrap.h"
 
 #ifdef _DEBUG
@@ -87,13 +88,40 @@ void VulkanEngine::Run()
 
 void VulkanEngine::InitVulkan()
 {
-	vkb::InstanceBuilder builder;
-	auto instanceResult = builder.set_app_name("Vulkan Engine")
+	vkb::InstanceBuilder instanceBuilder;
+	auto vkbInstance = instanceBuilder.set_app_name("Vulkan Engine")
 		.request_validation_layers(enableValidationLayers)
+		.use_default_debug_messenger()
 		.require_api_version(VK_VERSION_1_3)
-		.build();
+		.build()
+		.value();
 
-	vkb::Instance vkbInstance = instanceResult.value();
+	_instance = vkbInstance.instance;
+	_debugMessenger = vkbInstance.debug_messenger;
+
+	SDL_Vulkan_CreateSurface(_window, _instance, nullptr, &_surface);
+
+	VkPhysicalDeviceVulkan13Features features13{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+	features13.dynamicRendering = true;
+	features13.synchronization2 = true;
+
+	VkPhysicalDeviceVulkan12Features features12{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+	features12.bufferDeviceAddress = true;
+	features12.descriptorIndexing = true;
+
+	vkb::PhysicalDeviceSelector selector{ vkbInstance };
+	vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1,3)
+		.set_required_features_13(features13)
+		.set_required_features_12(features12)
+		.set_surface(_surface)
+		.select()
+		.value();
+
+	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
+	vkb::Device vkbDevice = deviceBuilder.build().value();
+
+	_device = vkbDevice.device;
+	_physicalDevice = physicalDevice.physical_device;
 }
 
 void VulkanEngine::InitSwapChain()
@@ -102,6 +130,11 @@ void VulkanEngine::InitSwapChain()
 	// Create image views for swap chain images
 	// Create render pass
 	// Create framebuffers for each swap chain image view
+}
+
+void VulkanEngine::CreateSwapChain(uint32_t width, uint32_t height)
+{
+	// Create or recreate the swap chain with given width and height
 }
 
 void VulkanEngine::InitCommands()
